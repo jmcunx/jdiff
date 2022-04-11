@@ -1,0 +1,75 @@
+.\"
+.\" Copyright (c) 2004 ... 2022 2023
+.\"     John McCue <jmccue@jmcunx.com>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.TH JDIFF 1 "2022-04-11" "JMC" "User Commands"
+.SH NAME
+jdiff - diff a Large Sorted Text File
+.SH SYNOPSIS
+jdiff [OPTIONS] file1 file2
+.SH DESCRIPTION
+This utility will perform a diff on Sorted
+Text Files.
+This can use far less system resources than diff(1)
+when comparing Extremely Large Files.
+.PP
+If only one File is specified or one of the File Names is '-',
+stdin will be used for that file.
+.TP
+-h
+Show brief help and exit.
+.TP
+-m n
+Optional, Print no more than 'n' differences.
+Default, print a maximum of 2000 lines of differences.
+Set to zero to print all differences.
+.TP
+-V
+Output version information and exit.
+.TP
+-v
+Optional, Verbose Level.
+Print information on stderr about the run,
+default do not show run messages.
+Can be specified multiple times,
+each specification increases verbose level:
+.nf
+    Level  Meaning
+    -----  --------------------------------------------
+    = 0    Show only errors
+    >= 1   Show Processing Stats
+    >= 2   Show Command Line Arguments
+    >= 3   print statuses during execution
+.fi
+.SH DIAGNOSTICS
+Since the purpose of this Utility
+is to diff very large files, differences
+printed will be limited.
+This behavior can be changed by Argument '-m'.
+.PP
+Does not print output in standard diff(1) format.
+Outputs File Number [12], Record Number, Item that differs.
+.PP
+Uses a fixed length buffer, this is done to avoid
+memory allocation calls.
+This can be modified easily by changing the jdiff.c
+.SH SEE-ALSO
+diff(1)
+.SH ERROR-CODES
+.nf
+0 success
+1 Differences Found
+2 Runtime error occurred
+.fi
