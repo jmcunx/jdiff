@@ -13,7 +13,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/* Sorted File Diff if Two ASCII Files*/
+/* Sorted File Diff if Two Sorted Text Files*/
 
 #define PROGNAME "jdiff"
 
@@ -67,7 +67,7 @@
 #define ARG_MAX_SHOW      'm'  /* Max lines to print                 */
 
 #define LIT_INFO_01  "\tBuild: %s %s\n"
-#define LIT_PROG     "diff Two Sorted ASCII Text Files "
+#define LIT_PROG     "diff Two Sorted Text Files "
 
 #define MSG_E000    "Try '%s %c%c' for more information\n"
 #define MSG_E001    "E001: Need just One or Two Text Files for Comparison\n"
