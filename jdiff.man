@@ -16,7 +16,7 @@
 .\"
 .TH JDIFF 1 "2022-04-11" "JMC" "User Commands"
 .SH NAME
-jdiff - diff a Large Sorted Text File
+jdiff - diff a Large Sorted Text Files
 .SH SYNOPSIS
 jdiff [OPTIONS] file1 file2
 .SH DESCRIPTION
@@ -27,6 +27,10 @@ when comparing Extremely Large Files.
 .PP
 If only one File is specified or one of the File Names is '-',
 stdin will be used for that file.
+.TP
+-b n
+Optional, set Read Buffer to size 'n'.
+Default, use a Read Buffer Size of 256 Bytes.
 .TP
 -h
 Show brief help and exit.
@@ -49,9 +53,10 @@ each specification increases verbose level:
     Level  Meaning
     -----  --------------------------------------------
     = 0    Show only errors
-    >= 1   Show Processing Stats
-    >= 2   Show Command Line Arguments
-    >= 3   print statuses during execution
+    >= 1   Show Warnings
+    >= 2   Show Processing Stats
+    >= 3   Show Command Line Arguments
+    >= 4   print statuses during execution
 .fi
 .SH DIAGNOSTICS
 Since the purpose of this Utility
@@ -60,16 +65,21 @@ printed will be limited.
 This behavior can be changed by Argument '-m'.
 .PP
 Does not print output in standard diff(1) format.
-Outputs File Number [12], Record Number, Item that differs.
+Outputs File Number (F1/F2), Record Number, Item that differs.
 .PP
-Uses a fixed length buffer, this is done to avoid
-memory allocation calls.
-This can be modified easily by changing the jdiff.c
+Uses a fixed length read buffer, this is done to avoid
+many memory allocation calls.
+This can be modified via argument '-b'.
+.PP
+For each Record, will only compare the first buffer size
+characters.
+All other characters on the line are ignored.
 .SH SEE-ALSO
+cmp(1),
 diff(1)
 .SH ERROR-CODES
 .nf
-0 success
+0 success, no differences
 1 Differences Found
 2 Runtime error occurred
 .fi

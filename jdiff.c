@@ -41,11 +41,10 @@
 #endif
 #endif
 
-#ifdef _MSDOS
 #define BUF_SIZE 256
+#ifdef _MSDOS
 #define MAX_ITERATION 999999
 #else
-#define BUF_SIZE 1024
 #define MAX_ITERATION 29999999
 #endif
 
@@ -62,6 +61,7 @@
 #define FILE_STDIN  "-"
 
 #define ARG_HELP          'h'  /* Show Help                          */
+#define ARG_BUFF          'b'  /* Buffer Size                        */
 #define ARG_VERBOSE       'v'  /* Verbose                            */
 #define ARG_VERSION       'V'  /* Show Version Information           */
 #define ARG_MAX_SHOW      'm'  /* Max lines to print                 */
@@ -81,7 +81,9 @@
 #define MSG_E009    "E009: 'Too many Arguments specified for %c%c\n"
 #define MSG_E010    "E010: '%lld' is an invalid value for %c%c\n"
 #define MSG_E011    "E011: Cannot get System Time: %s\n"
+#define MSG_E012    "E012: cannot allocate %ld characters of memory\n"
 
+#define MSG_W092    "W092: Maximum Record Length Found: %-llu\n"
 #define MSG_I093    "I093: Seconds %7ld, Records Compared %15llu\n"
 #define MSG_I094    "I094: %s: %llu: %s\n"
 #define MSG_I095    "I095: %s: %llu: %s\n"  /* for entries if one file EOF */
@@ -90,6 +92,7 @@
 #define MSG_I098    "I098: File Diff Writes           : %-llu\n"
 #define MSG_I105    "I105: Verbose Level              : %-d\n"
 #define MSG_I106    "I108: Text File Number %d:\n    %s\n"
+#define MSG_I107    "I107: Read Buffer Size           : %-ld (1 added fir NULL)\n"
 
 #define USG_MSG_USAGE_1          "usage:\t%s [OPTIONS]\n"
 #define USG_MSG_OPTIONS          "Options\n"
@@ -97,6 +100,7 @@
 #define USG_MSG_ARG_HELP         "\t%c%c\t\t: Show brief help and exit\n"
 #define USG_MSG_ARG_VERSION      "\t%c%c\t\t: Show revision information and exit\n"
 #define USG_MSG_ARG_MAX_SHOW     "\t%c%c n\t\t: Maximum Number of Differences to print\n"
+#define USG_MSG_ARG_BUFF         "\t%c%c n\t\t: Allocate Read Buffer of size n\n"
 
 
 struct s_file
@@ -106,17 +110,19 @@ struct s_file
   char fname[PATH_MAX];
   int  allow_close; /* TRUE/FALSE */
   int  at_eof;      /* TRUE/FALSE */
-  char buf[BUF_SIZE];
-  char buf_last[BUF_SIZE];
+  char *buf;
+  char *buf_last;
 } ;
 
 struct s_args
 {
   int verbose;
   int stdin_assigned;
+  size_t buf_size;
   NUM show_max;
   NUM count_diff;
   NUM writes;
+  NUM max_size_found;
   time_t seconds_start;
   struct s_file f1;
   struct s_file f2;
@@ -185,6 +191,7 @@ void show_info(FILE *fp, int rmode)
       fprintf(fp, USG_MSG_USAGE_1, PROGNAME);
       fprintf(fp, "\t%s\n", LIT_PROG);
       fprintf(fp, USG_MSG_OPTIONS);
+      fprintf(fp, USG_MSG_ARG_BUFF,         SWITCH_CHAR, ARG_BUFF);
       fprintf(fp, USG_MSG_ARG_HELP,         SWITCH_CHAR, ARG_HELP);
       fprintf(fp, USG_MSG_ARG_MAX_SHOW,     SWITCH_CHAR, ARG_MAX_SHOW);
       fprintf(fp, USG_MSG_ARG_VERSION,      SWITCH_CHAR, ARG_VERSION);
@@ -219,8 +226,9 @@ void init_file(struct s_file *f)
   f->fp          = (FILE *) NULL;
   f->reads       = (NUM) 0;
   f->allow_close = FALSE;
-  memset(f->buf,      0, BUF_SIZE);
-  memset(f->buf_last, 0, BUF_SIZE);
+  f->buf         = (char *) NULL;
+  f->buf_last    = (char *) NULL;
+  
 } /* init_file() */
 
 /*
@@ -262,14 +270,13 @@ long long get_ll(char *argval, char arg, long long current_val)
  */
 void init_work(struct s_args *w)
 {
-  init_file(&(w->f1));
-  init_file(&(w->f2));
-
   w->verbose        = 0;
   w->stdin_assigned = FALSE;
   w->show_max       = (NUM) 2000;
   w->count_diff     = (NUM) 0;
   w->writes         = (NUM) 0;
+  w->max_size_found = (NUM) 0;
+  w->buf_size       = (size_t) BUF_SIZE;
   
   w->seconds_start  = time((time_t *) NULL);
   if (w->seconds_start < 0)
@@ -278,31 +285,40 @@ void init_work(struct s_args *w)
       exit(2);
     }
 
+  init_file(&(w->f1));
+  init_file(&(w->f2));
+
 } /* init_work() */
 
 /*
  * process_arg() -- process arguments
  */
-void process_arg(int argc, char **argv, struct s_args *args)
+void process_arg(int argc, char **argv, struct s_args *w)
 
 {
   char ckarg[SCKARG];
   int opt;
-  int i = 0;
-  int num_files = 0;
-  int set_max = FALSE;
-  long long max = 0LL;
+  int i           = 0;
+  int num_files   = 0;
+  int set_max     = FALSE;
+  int set_bsize   = FALSE;
+  long long max   = 0LL;
+  long long bsize = 0LL;
 
-  init_work(args);
+  init_work(w);
 
-  snprintf(ckarg, SCKARG, "%c%c%c%c:",
+  snprintf(ckarg, SCKARG, "%c%c%c%c:%c:",
 	   ARG_VERBOSE,    ARG_VERSION,   ARG_HELP,
-	   ARG_MAX_SHOW);
+	   ARG_MAX_SHOW,   ARG_BUFF);
 
   while ((opt = getopt(argc, argv, ckarg)) != -1)
     {
       switch (opt)
 	{
+	case ARG_BUFF:
+	  bsize = get_ll(optarg, ARG_MAX_SHOW, bsize);
+	  set_bsize = TRUE;
+	  break;
 	case ARG_MAX_SHOW:
 	  max = get_ll(optarg, ARG_MAX_SHOW, max);
 	  set_max = TRUE;
@@ -314,7 +330,7 @@ void process_arg(int argc, char **argv, struct s_args *args)
 	  show_info(stderr, 2);
 	  break;
 	case ARG_VERBOSE:
-	  args->verbose++;
+	  w->verbose++;
 	  break;
 	default:
 	  fprintf(stderr, MSG_E000, PROGNAME, SWITCH_CHAR, ARG_HELP);
@@ -327,12 +343,12 @@ void process_arg(int argc, char **argv, struct s_args *args)
   for (i = optind, num_files = 0; i < argc; i++)
     {
       num_files++;
-      if (strlen(args->f1.fname) == 0)
-	set_fname(args->f1.fname, argv[i]);
+      if (strlen(w->f1.fname) == 0)
+	set_fname(w->f1.fname, argv[i]);
       else
 	{
-	  if (strlen(args->f2.fname) == 0)
-	    set_fname(args->f2.fname, argv[i]);
+	  if (strlen(w->f2.fname) == 0)
+	    set_fname(w->f2.fname, argv[i]);
 	}
     }
 
@@ -345,7 +361,17 @@ void process_arg(int argc, char **argv, struct s_args *args)
 	  fprintf(stderr, MSG_E000, PROGNAME, SWITCH_CHAR, ARG_HELP);
 	  exit(2);
 	}
-      args->show_max = (NUM) max;
+      w->show_max = (NUM) max;
+    }
+  if (set_bsize == TRUE)
+    {
+      if ((bsize < 5LL) || (bsize > (LONG_MAX - 20)))
+	{
+	  fprintf(stderr, MSG_E010, bsize, SWITCH_CHAR, ARG_BUFF);
+	  fprintf(stderr, MSG_E000, PROGNAME, SWITCH_CHAR, ARG_HELP);
+	  exit(2);
+	}
+      w->buf_size = (long) bsize + 1; /* +1 for NULL */
     }
   
   switch (num_files)
@@ -361,6 +387,32 @@ void process_arg(int argc, char **argv, struct s_args *args)
       fprintf(stderr, MSG_E000, PROGNAME, SWITCH_CHAR, ARG_HELP);
       exit(2);
       break;
+    }
+
+  /* Allocate buffer */
+  w->f1.buf = calloc(w->buf_size, sizeof(char));
+  if (w->f1.buf == (char *) NULL)
+    {
+      fprintf(stderr, MSG_E012, (long) w->buf_size);
+      exit(2);
+    }
+  w->f2.buf = calloc(w->buf_size, sizeof(char));
+  if (w->f2.buf == (char *) NULL)
+    {
+      fprintf(stderr, MSG_E012, (long) w->buf_size);
+      exit(2);
+    }
+  w->f1.buf_last = calloc(w->buf_size, sizeof(char));
+  if (w->f1.buf_last == (char *) NULL)
+    {
+      fprintf(stderr, MSG_E012, (long) w->buf_size);
+      exit(2);
+    }
+  w->f2.buf_last = calloc(w->buf_size, sizeof(char));
+  if (w->f2.buf_last == (char *) NULL)
+    {
+      fprintf(stderr, MSG_E012, (long) w->buf_size);
+      exit(2);
     }
 
 } /* END process_arg() */
@@ -411,27 +463,48 @@ int open_read(struct s_file *f, int *stdin_assigned)
 /*
  * read_rec() -- get next record
  */
-int read_rec(struct s_file *f)
+int read_rec(struct s_file *f, NUM *max, size_t buf_size)
 {
+  static char *b = (char *) NULL;
+  static size_t bsize = (size_t) 0;
+  ssize_t cread = (ssize_t) 0;
   
   if (f->at_eof == TRUE)
     return(FALSE);
 
-  strncpy(f->buf_last,f->buf,BUF_SIZE);
+  if (b == (char *) NULL)
+    {
+      bsize = buf_size + (size_t) 10;
+      b = calloc(bsize, sizeof(char));
+      if (b == (char *) NULL)
+	{
+	  fprintf(stderr, MSG_E012, (long) bsize);
+	  exit(2);
+	}
+    }
 
-  memset(f->buf, 0, BUF_SIZE);
-  if (fgets(f->buf, BUF_SIZE, f->fp) == (char *) NULL)
+  strncpy(f->buf_last, f->buf, buf_size);
+
+  cread = getline(&b, &bsize, f->fp);
+  
+  if (cread < (ssize_t) 0)
     {
       f->at_eof = TRUE;
-      memset(f->buf_last, 0, BUF_SIZE);
-      memset(f->buf,      0, BUF_SIZE);
+      memset(f->buf_last, 0, buf_size);
+      memset(f->buf,      0, buf_size);
       return(FALSE);
     }
+
+  if (cread > (ssize_t) (*max))
+    (*max) = cread;
   
   f->reads++;
+
+  memset(f->buf,  0, buf_size);
+  strncpy(f->buf, b, buf_size);
   rtw(f->buf);
   
-  if (strncmp(f->buf_last, f->buf, BUF_SIZE) > 0)
+  if (strncmp(f->buf_last, f->buf, buf_size) > 0)
     {
       fprintf(stderr, MSG_E004, f->fname);
       fprintf(stderr, MSG_E005, f->reads);
@@ -449,12 +522,12 @@ void diff_both(struct s_args *a)
 {
   int results = 0;
   
-  results = strncmp(a->f1.buf,a->f2.buf, BUF_SIZE);
+  results = strncmp(a->f1.buf,a->f2.buf, a->buf_size);
   switch (results)
     {
     case 0:
-      read_rec(&(a->f1));
-      read_rec(&(a->f2));
+      read_rec(&(a->f1), &(a->max_size_found), a->buf_size);
+      read_rec(&(a->f2), &(a->max_size_found), a->buf_size);
       break;
     default:
       a->count_diff++;
@@ -465,7 +538,7 @@ void diff_both(struct s_args *a)
 	      a->writes++;
 	      fprintf(stdout, MSG_I094, "F1", a->f1.reads, a->f1.buf);
 	    }
-	  read_rec(&(a->f1));
+	  read_rec(&(a->f1), &(a->max_size_found), a->buf_size);
 	}
       else
 	{
@@ -474,7 +547,7 @@ void diff_both(struct s_args *a)
 	      a->writes++;
 	      fprintf(stdout, MSG_I094, "F2", a->f2.reads, a->f2.buf);
 	    }
-	  read_rec(&(a->f2));
+	  read_rec(&(a->f2), &(a->max_size_found), a->buf_size);
 	}
       break;
     }
@@ -495,7 +568,7 @@ void diff_single(struct s_args *a)
 	  a->writes++;
 	  fprintf(stdout, MSG_I095, "F1", a->f1.reads, a->f1.buf);
 	}
-      read_rec(&(a->f1));
+      read_rec(&(a->f1), &(a->max_size_found), a->buf_size);
       return;
     }
   
@@ -506,7 +579,7 @@ void diff_single(struct s_args *a)
 	  a->writes++;
 	  fprintf(stdout, MSG_I095, "F2", a->f2.reads, a->f2.buf);
 	}
-      read_rec(&(a->f2));
+      read_rec(&(a->f2), &(a->max_size_found), a->buf_size);
       return;
     }
 
@@ -525,15 +598,15 @@ void diff(struct s_args *a)
   time_t seconds_now;
 
   /*** get first record ***/
-  read_rec(&(a->f1));
-  read_rec(&(a->f2));
+  read_rec(&(a->f1), &(a->max_size_found), a->buf_size);
+  read_rec(&(a->f2), &(a->max_size_found), a->buf_size);
 
   /*** process diff ***/
   while((a->f1.at_eof == FALSE) || (a->f2.at_eof == FALSE))
     {
       iteration++;
       show_mark++;
-      if ((show_mark > (NUM) MAX_ITERATION) && (a->verbose > 2))
+      if ((show_mark > (NUM) MAX_ITERATION) && (a->verbose > 3))
 	{
 	  show_mark = (NUM) 0;
 	  seconds_now  = time((time_t *) NULL);
@@ -563,9 +636,10 @@ int main(int argc, char **argv)
       exit(2);
     }
 
-  if (args.verbose > 1)
+  if (args.verbose > 2)
     {
       fprintf(stderr, MSG_I105, args.verbose);
+      fprintf(stderr, MSG_I107, args.buf_size);
       fprintf(stderr, MSG_I106, 1,
 	      (strlen(args.f1.fname) == 0 ? "stdin" : args.f1.fname));
       fprintf(stderr, MSG_I106, 2,
@@ -576,10 +650,14 @@ int main(int argc, char **argv)
 
   if (args.verbose > 0)
     {
-      fprintf(stderr, MSG_I096, args.count_diff);
-      fprintf(stderr, MSG_I097, 1, args.f1.reads);
-      fprintf(stderr, MSG_I097, 2, args.f2.reads);
-      fprintf(stderr, MSG_I098, args.writes);
+      fprintf(stderr, MSG_W092, args.max_size_found);
+      if (args.verbose > 1)
+	{
+	  fprintf(stderr, MSG_I096, args.count_diff);
+	  fprintf(stderr, MSG_I097, 1, args.f1.reads);
+	  fprintf(stderr, MSG_I097, 2, args.f2.reads);
+	  fprintf(stderr, MSG_I098, args.writes);
+	}
     }
 
   close_file(&(args.f1));
