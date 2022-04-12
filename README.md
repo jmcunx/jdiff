@@ -12,8 +12,6 @@ To compile:
 * If "DESTDIR" is not set, will install under /usr/local
 * Execute ./build.sh to create a Makefile
 * Works on Linux, BSD and AIX
-* Uses a fixed read buffer, modify BUF_SIZE to increase.
-  Doing this avoids lots of memory allocation calls.
 
 Will install:
 * Binary jdiff
