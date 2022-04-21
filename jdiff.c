@@ -86,7 +86,7 @@
 
 #define MSG_I091    "I091: Maximum Record Length Found: %-llu\n"
 #define MSG_W092    "W092: Maximum Record Length Found: %-llu (some records truncated)\n"
-#define MSG_I093    "I093: Seconds %7ld, Records Compared %15llu\n"
+#define MSG_I093    "I093: Seconds %7lld, Records Compared %15llu\n"
 #define MSG_I094    "I094: %s: %llu: %s\n"
 #define MSG_I095    "I095: %s: %llu: %s\n"  /* for entries if one file EOF */
 #define MSG_I096    "I096: Differences Found:         : %-llu\n"
@@ -627,7 +627,7 @@ void diff(struct s_work *w)
 	{
 	  show_mark = (NUM) 0;
 	  seconds_now  = time((time_t *) NULL);
-	  fprintf(stderr, MSG_I093, (seconds_now - w->seconds_start), iteration);
+	  fprintf(stderr, MSG_I093, (long long) (seconds_now - w->seconds_start), iteration);
 	}
       if ((w->f1.at_eof == FALSE) && (w->f2.at_eof == FALSE))
 	diff_both(w);
