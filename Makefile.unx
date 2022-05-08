@@ -76,8 +76,14 @@ MKDIR=mkdir
 
 EXE=
 OBJ=.o
-CFLAGS=-c $(WALL) -DOSTYPE="\"$(OSDESC)\""
-LFLAGS=$(WALL) -o jdiff $(LIBS)
+
+#--- for production
+CFLAGS=-O1 -c $(WALL) -DOSTYPE="\"$(OSDESC)\""
+LFLAGS=-O1 $(WALL) -o jdiff $(LIBS)
+
+#--- for valgrind
+#CFLAGS=-O0 -g -c $(WALL) -DOSTYPE="\"$(OSDESC)\""
+#LFLAGS=-O0 -g $(WALL) -o jdiff $(LIBS)
 
 ALL_OBJ=jdiff$(OBJ)
 ALL_C=jdiff.c

@@ -233,6 +233,7 @@ void init_file(struct s_file *f)
   f->allow_close = FALSE;
   f->buf         = (char *) NULL;
   f->buf_last    = (char *) NULL;
+  f->at_eof      = FALSE;
 
 } /* init_file() */
 
@@ -474,11 +475,25 @@ int open_read(struct s_file *f, int *stdin_assigned)
 /*
  * read_rec() -- get next record
  */
-int read_rec(struct s_file *f, NUM *max, size_t buf_size)
+int read_rec(struct s_file *f, NUM *max, size_t buf_size, int free_mem)
 {
   static char *b = (char *) NULL;
   static size_t bsize = (size_t) 0;
   ssize_t cread = (ssize_t) 0;
+
+  if (free_mem == TRUE)
+    {
+      if (b != (char *) NULL)
+	free(b);
+      if (f->buf != (char *) NULL)
+	free(f->buf);
+      if (f->buf_last != (char *) NULL)
+	free(f->buf_last);
+      b = (char *) NULL;
+      f->buf = (char *) NULL;
+      f->buf_last = (char *) NULL;
+      return(FALSE);
+    }
 
   if (f->at_eof == TRUE)
     return(FALSE);
@@ -537,8 +552,8 @@ void diff_both(struct s_work *w)
   switch (results)
     {
     case 0:
-      read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size);
-      read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size);
+      read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size, FALSE);
+      read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size, FALSE);
       break;
     default:
       w->count_diff++;
@@ -549,7 +564,7 @@ void diff_both(struct s_work *w)
 	      w->writes++;
 	      fprintf(stdout, MSG_I094, "F1", w->f1.reads, w->f1.buf);
 	    }
-	  read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size);
+	  read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size, FALSE);
 	}
       else
 	{
@@ -558,7 +573,7 @@ void diff_both(struct s_work *w)
 	      w->writes++;
 	      fprintf(stdout, MSG_I094, "F2", w->f2.reads, w->f2.buf);
 	    }
-	  read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size);
+	  read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size, FALSE);
 	}
       break;
     }
@@ -582,7 +597,7 @@ void diff_single(struct s_work *w)
 	      fprintf(stdout, MSG_I095, "F1", w->f1.reads, w->f1.buf);
 	    }
 	}
-      read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size);
+      read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size, FALSE);
       return;
     }
 
@@ -596,7 +611,7 @@ void diff_single(struct s_work *w)
 	      fprintf(stdout, MSG_I095, "F2", w->f2.reads, w->f2.buf);
 	    }
 	}
-      read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size);
+      read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size, FALSE);
       return;
     }
 
@@ -615,8 +630,8 @@ void diff(struct s_work *w)
   time_t seconds_now;
 
   /*** get first record ***/
-  read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size);
-  read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size);
+  read_rec(&(w->f1), &(w->max_size_found), w->arg_buf_size, FALSE);
+  read_rec(&(w->f2), &(w->max_size_found), w->arg_buf_size, FALSE);
 
   /*** process diff ***/
   while((w->f1.at_eof == FALSE) || (w->f2.at_eof == FALSE))
@@ -682,6 +697,8 @@ int main(int argc, char **argv)
 
   close_file(&(w.f1));
   close_file(&(w.f2));
+  read_rec(&(w.f1), 0, 0, TRUE);
+  read_rec(&(w.f2), 0, 0, TRUE);
 
   if (w.count_diff == (NUM) 0)
     exit(0);
