@@ -65,7 +65,13 @@ if test "$?" -eq "0"
 then
     g_sed_2="=ectags"
 else
-    g_sed_2="=ctags"
+    type exctags > /dev/null 2>&1
+    if test "$?" -eq "0"
+    then
+	g_sed_2="=exctags"
+    else
+	g_sed_2="=ctags"
+    fi
 fi
 
 case "$CC" in
