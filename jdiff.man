@@ -67,17 +67,21 @@ each specification increases verbose level (Note, see '-q' above):
     >= 4   print statuses during execution
 .fi
 .SH DIAGNOSTICS
-Since the purpose of this Utility
-is to diff very large files, differences
-printed will be limited.
-This behavior can be changed by Arguments '-m' and '-q'.
-.PP
-Does not print output in standard diff(1) format.
-Outputs File Number (F1/F2), Record Number, Item that differs.
+You should try diff(1) first, but on some
+systems, diff(1) will abort due to memory constraints.
 .PP
 Uses a fixed length read buffer, this is done to avoid
 many memory allocation calls.
 This can be modified via argument '-b'.
+.PP
+Since the purpose of this Utility
+is to diff very large sorted files extracted
+from various databases,
+differences printed will be limited.
+This behavior can be changed by Arguments '-m' and '-q'.
+.PP
+Does not print output in standard diff(1) format.
+Outputs File Number (F1/F2), Record Number, Item that differs.
 .PP
 For each Record, will only compare the first buffer size
 characters.

@@ -6,7 +6,16 @@ Most cases diff(1) is better, but if you need to compare 2 **Very
 Large Extracts** from say two different databases, this will work
 fine.  But, the Files must be in sorted order.
 
-This works fine under Linux, BSD(s) and AIX
+This works fine under Linux, BSD(s) and AIX.
+
+You should use
+[diff(1)](https://en.wikipedia.org/wiki/Diff)
+if possible.
+This was created to compare very large files
+extracted from
+[SQL](https://en.wikipedia.org/wiki/SQL)
+Databases on Systems
+that have a memory constrained diff(3).
 
 To compile:
 * If "DESTDIR" is not set, will install under /usr/local
