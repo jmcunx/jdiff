@@ -86,6 +86,7 @@ Outputs File Number (F1/F2), Record Number, Item that differs.
 For each Record, will only compare the first buffer size
 characters.
 All other characters on the line are ignored.
+See (-b) above.
 .SH SEE-ALSO
 cmp(1),
 diff(1)

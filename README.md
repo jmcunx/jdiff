@@ -15,7 +15,7 @@ This was created to compare very large files
 extracted from
 [SQL](https://en.wikipedia.org/wiki/SQL)
 Databases on Systems
-that have a memory constrained diff(3).
+that have a memory constrained diff(1).
 
 To compile:
 * If "DESTDIR" is not set, will install under /usr/local
