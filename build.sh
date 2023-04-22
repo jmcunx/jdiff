@@ -48,6 +48,10 @@ case "`uname -m`" in
 	g_sed_1="^#BSD64#"
 	g_lib="lib"
 	;;
+    "i386")
+	g_sed_1="^#BSD32#"
+	g_lib="lib"
+	;;
     *)
 	if test "$OS" = "AIX"
 	then
