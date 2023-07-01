@@ -682,7 +682,7 @@ int main(int argc, char **argv)
 
   if (w.arg_verbose > 0)
     {
-      if (w.max_size_found == w.arg_buf_size)
+      if (w.max_size_found <= w.arg_buf_size)
 	fprintf(stderr, MSG_I091, (w.max_size_found - 1));
       else
 	fprintf(stderr, MSG_W092, (w.max_size_found - 1));
