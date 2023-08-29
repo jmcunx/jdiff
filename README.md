@@ -1,5 +1,13 @@
 ## jdiff - Sorted diff of two Text Files
 
+**Note:** Starting October 12 2023, GitHub is forcing me to use
+my Cell Phone for 2FA to allow access to my repositories.  I do
+not want Microsoft to have access to my phone.  So updates to
+this project will no longer occur on GitHub.  I will make a note
+of where source can be retrieved from on my Gemini Capsule once
+everything is moved off of GitHub.
+Capsule: gemini://gem.sdf.org/jmccue/ or mirror gemini://sdf.org/jmccue/
+
 Will perform a diff on Two Sorted Text Files.
 
 Most cases diff(1) is better, but if you need to compare 2 **Very
